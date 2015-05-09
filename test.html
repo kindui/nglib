@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <meta charset="utf-8"/>
+    <script type="text/javascript" src="ng.js"></script>
+</head>
+<body>
+<div style="border:1px solid red;height: 800px"></div>
+<div id="d1" class="a b c" style="border: 3px solid blue;float: left;opacity:0.5;display: inline-block">
+    <div>
+        <p class="n">nihao</p>
+    </div>
+</div>
+<p id="d2" style="background: red;width: 100px;height: 100px"></p>
+<button id='btn'>click me!</button>
+
+<script>
+//var d1 = UI.$('d1');
+    //    UI.loadJs('test/a.js',function(){
+    //       console.log('a.js loaded');
+    //    });
+
+    //    UI.asynJSON('test/c.js','nihao',function(ret){
+    //        console.log(ret);
+    //    });
+
+    //    UI.addEvent(UI.$('btn'),'click',function(e){
+    //       e = UI.E(e);
+    //        console.log(e.button);
+    //    });
+
+    //        UI.addEvent(UI.$('d2'), 'mouseup', function (e) {
+    //            e = UI.E(e);
+    //            console.log("mouseup" + e.which);
+    //        });
+
+    UI.addEvent(UI.$('d2'), 'click', function (e) {
+        console.log(this);
+//        console.log("mousedown" + 1);
+    });
+
+//    UI.addEvent(UI.$('d2'), 'mousedown', function (e) {
+//        console.log("mousedown" + 2);
+//    });
+
+
+    //        UI.addEvent(UI.$('d2'), 'keydown', function (e) {
+    //        });
+    //    document.addEventListener('mousewheel', scrollFunc, false);
+    //
+    //    function scrollFunc(e) {
+    //        console.log(e);
+    //    }
+    //    UI.addEvent(document, 'mousedown', function (e) {
+    //        e = UI.E(e);
+    ////        console.log('button:'+e.button);
+    //        console.log('which'+e.which);
+    //
+    //    });
+
+
+    //    UI.addEvent(document, 'DOMMouseScroll', function (e) {
+    //        console.log(e.detail);
+    //    });
+    //
+
+    //    UI.addEvent(document, 'mousewheel', function (e) {
+    //        e = UI.E(e);
+    //        console.log(e.wheel);
+    //    });
+</script>
+</body>
+</html>

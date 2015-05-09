@@ -1,0 +1,666 @@
+/**
+ * Author: humanhuang
+ */
+
+
+
+//===================prototype===============
+Function.prototype.bind = function (b) {
+    var a = this, arg = [].slice.call(arguments, 1);
+    return function () {
+        a.apply(b, arg.concat(arguments));
+    }
+};
+Function.prototype.once = function () {
+    var b = false,
+        a = this;
+    return function () {
+        if (b) {
+            return
+        } else {
+            b = true;
+            a.apply(this, arguments)
+        }
+    }
+};
+Function.prototype.before = function (b) {
+    var a = this;
+    return function () {
+        if (b.apply(this, arguments) == false) {
+            return false
+        }
+        return a.apply(this, arguments)
+    }
+};
+Function.prototype.after = function (b) {
+    var a = this;
+    return function () {
+        var c = a.apply(this, arguments);
+        if (c === false) {
+            return false
+        }
+        b.apply(this, arguments);
+        return c
+    }
+};
+String.prototype.hasString = function (f) {
+    if (typeof f == "object") {
+        for (var d = 0, g = f.length; d < g; d++) {
+            if (!this.hasString(f[d])) {
+                return false
+            }
+        }
+        return true
+    } else {
+        if (this.indexOf(f) != -1) {
+            return true
+        }
+    }
+};
+//===================prototype===============
+
+
+UI = window.UI || {
+
+    //===================selector===============
+    $: function (id) {
+//        $('id'), $(['id1', 'id2'])
+        if (id && id.nodeType == 1 || id.nodeType == 9) {
+            return id;
+        }
+        var ret = [];
+        if (typeof(id) == 'string') {
+            var el;
+            if (el = document.getElementById(id)) {
+                return el;
+            } else {
+                throw new Error('无法找到,id为:' + id + '');
+            }
+
+        } else {
+            var item;
+            for (var b = 0; b < arguments.length; b++) {
+                var a = arguments[b];
+                (item = document.getElementById(a)) && ret.push(item);
+            }
+        }
+        return ret;
+    },
+    $$: function (klass, tagname, id) {
+
+        // @todo  这边没有做去重.  如果出现tagname嵌套的话..就会重复了.
+//         $$('clas1','div','container'),$$('clas1','div')
+        var node = id ? UI.$(node) : document;
+        var nodeList = (tagname == "*" && node.all) ? node.all : node.getElementsByTagName(tagname);
+        var reg = new RegExp('^|\\s' + klass + '$|\\s');
+        var n, ret = [];
+        for (var c = 0; c < nodeList.length; c++) {
+            n = nodeList[c];
+            if (n.className && reg.test(n.className)) {
+                ret.push(n);
+            }
+        }
+        return ret;
+    },
+    //==========================================
+
+
+    //===================browser================
+    B: (function () {
+        var d = {},
+            c = navigator.userAgent;
+        d.win = c.hasString("Windows") || c.hasString("Win32");
+        d.ie6 = c.hasString("MSIE 6") && !c.hasString("MSIE 7") && !c.hasString("MSIE 8");
+        d.ie7 = c.hasString("MSIE 7");
+        d.ie8 = c.hasString("MSIE 8");
+        d.ie = c.hasString("MSIE");
+        d.opera = window.opera || c.hasString("Opera");
+        d.safari = c.hasString("WebKit");
+        d.chrome = c.hasString("Chrome");
+        d.ipad = c.hasString("iPad");
+        d.mac = c.hasString("Mac");
+        d.firefox = c.hasString("Firefox");
+        return d
+    })(),
+    cookie: function (name, value, days, path, domain) {
+        if (arguments.length == 1) {
+            //get
+            var a = document.cookie.match(new RegExp("(^| )" + name + "=([^;]*)(;|$)"));
+            if (a != null) {
+                return decodeURIComponent(a[2]);
+            }
+            return null
+        } else {
+            if (arguments[1] == null) {
+                //remove
+                document.cookie = name + "=000" + ((path) ? "; path=" + path : "; path=/") + ((domain) ? "; domain=" + domain : "") + "; expires=Fri, 02-Jan-1970 00:00:00 GMT"
+            } else {
+                //add or update
+                var e = "";
+                e = new Date;
+                if (!days) {
+                    e.setTime(e.getTime() + 24 * 60 * 60 * 1000); // 1 day;
+                } else {
+                    e.setTime(e.getTime() + days * 24 * 60 * 60 * 1000) // some day;
+                }
+                e = "; expires=" + e.toGMTString();
+                document.cookie = name + "=" + value + e + ((path) ? "; path=" + path : "; path=/") + ((domain) ? ";domain=" + domain : "")
+            }
+            return true;
+        }
+    },
+    //==========================================
+
+
+    //===================util===================
+    getType: function (o) {
+        return Object.prototype.toString.call(o).slice(8, -1);
+    },
+    each: function (o, fn) {
+//        IE6下 collection也是object
+        if (UI.getType(o) == 'Array') {
+            var L = o.length, c;
+            for (c = 0; c < L; c++) {
+                fn(o[c], c);
+            }
+        } else if (UI.getType(o) == 'Object') {
+            for (var c in o) {
+                fn(c, o[c]);
+            }
+        }
+    },
+    localData: {
+        hname: location.hostname ? location.hostname : "localStatus",
+        isLocalStorage: window.localStorage ? true : false,
+        dataDom: null,
+        initDom: function () {
+            if (!this.dataDom) {
+                try {
+                    this.dataDom = document.createElement("input");
+                    this.dataDom.type = "hidden";
+                    this.dataDom.style.display = "none";
+                    this.dataDom.addBehavior("#default#userData");
+                    document.body.appendChild(this.dataDom);
+                    var b = new Date();
+                    b = b.getDate() + 30;
+                    this.dataDom.expires = b.toUTCString()
+                } catch (a) {
+                    return false
+                }
+            }
+            return true
+        },
+        set: function (a, b) {
+            if (b == undefined) {
+                //undefined == null
+                b = '';
+            }
+            if (this.isLocalStorage) {
+                window.localStorage.setItem(a, b)
+            } else {
+                if (this.initDom()) {
+                    this.dataDom.load(this.hname);
+                    this.dataDom.setAttribute(a, b);
+                    this.dataDom.save(this.hname)
+                }
+            }
+        },
+        get: function (a) {
+            if (this.isLocalStorage) {
+                return window.localStorage.getItem(a)
+            } else {
+                if (this.initDom()) {
+                    this.dataDom.load(this.hname);
+                    return this.dataDom.getAttribute(a)
+                }
+            }
+        },
+        remove: function (a) {
+            if (this.isLocalStorage) {
+                localStorage.removeItem(a)
+            } else {
+                if (this.initDom()) {
+                    this.dataDom.load(this.hname);
+                    this.dataDom.removeAttribute(a);
+                    this.dataDom.save(this.hname)
+                }
+            }
+        }
+    },
+    //===================util===================
+
+
+    //===================dom====================
+    css: function (el, clName, val) {
+        el = UI.$(el);
+        //==========================
+        //| el.style => CSSStyleDeclaration
+        //| el.currentStyle; IE789;
+        //| document.defaultView.getComputedStyle(el,null); chrome,FF
+        //| getComputedStyle 会结合元素的所有样式,返回实际样式,只可读
+        //| el.style.cssText  | el.setAttribute('style',str) => IE6(x);
+
+        //==========el.style==================================
+        //| Attribute Name   | chrome   | IE78 | IE9 | FF  |
+        //| float            |   ✓      |  ✓   | ✘  | ✘   |
+        //| cssFloat         |   ✓      |  ✘   | ✓  | ✓    |
+        //=====================================================
+
+        //{'':'','':''}
+        if (UI.getType(clName) === 'Object') {
+            for (var k in clName) {
+                UI.css(el, k, clName[k]);
+            }
+        }
+
+        if (val === undefined) {
+            switch (clName) {
+                case 'display':
+                    //bug
+                    return el.style.display;
+                    break;
+
+                default:
+//            在FireFox3.6上不使用defaultView方法就搞不定的; document.defaultView.getComputedStyle
+                    return el.currentStyle ? el.currentStyle[clName] : window.getComputedStyle(el, null)[clName];
+            }
+        } else {
+            switch (clName) {
+                case 'opacity':
+                    el.style['opacity'] = val;
+                    c.style.filter = "alpha(opacity:" + val / 100 + ")";
+                    break;
+
+                //@todo float
+                default :
+                    el.style[clName] = val;
+            }
+
+        }
+    },
+    getClass: function (el) {
+        el = UI.$(el);
+        if (el.className === '') return [];
+        return el.className.replace(/\s+/g, ' ').split(' ');
+    },
+    hasClass: function (el, clName) {
+        if (el.className == '') return false;
+        var clnames = UI.getClass(el);
+        var len = clnames.length;
+        for (var c = 0; c < len; c++) {
+            if (clnames[c] === clName) {
+                return true;
+            }
+        }
+        return false;
+    },
+    addClass: function (el, clName) {
+        el = UI.$(el);
+        if (UI.hasClass(el, clName)) return false;
+        el.className += (el.className ? ' ' : '' ) + clName;
+        return true;
+    },
+    removeClass: function (el, clName) {
+        el = UI.$(el);
+        var clnames = UI.getClass(el);
+        var Len = clnames.length;
+        for (var c = Len - 1; c >= 0; c--) {
+            if (clnames[c] === clName) {
+                clnames.splice(c, 1);
+            }
+        }
+        el.className = clnames.join(' ');
+        return (Len === clnames.length ? false : true);
+    },
+    show: function (el) {
+        el = UI.$(el);
+        el.style.display = el.__display || 'block';
+    },
+    hide: function (el) {
+        el = UI.$(el);
+        var dis = el.style.display;
+        if (dis !== 'none') el.__display = dis;
+
+        el.style.display = 'none';
+    },
+    //==========================================
+
+
+    //===================event==================
+    addEvent: function (el, eventType, fn) {
+        el = UI.$(el);
+        eventType = UI.fixEventType(eventType);
+
+        if (!el['ng-'+eventType]) {
+            el['ng-'+eventType] = [];
+        }
+
+        el['ng-'+eventType].push(fn);
+
+        if (el.addEventListener) {
+            el.addEventListener(eventType, fn, false);
+        } else if (el.attachEvent) {
+            // IE8- 这个函数需要curry的. 否则this指向window
+            // 添加多个handler的时候，调用顺序是后注册的先调用
+            el.attachEvent("on" + eventType, fn.bind(el));
+        } else {
+            el["on" + eventType] = fn;
+        }
+
+        el = null;
+        eventType = null;
+        return true;
+    },
+    removeEvent: function (el, eventType, fn) {
+        el = UI.$(el);
+        if (fn === undefined) {
+            var fns = el['ng-'+eventType];
+            for (var c = 0, L = fns.length; c < L; c++) {
+
+                if (el.removeEventListener) {
+                    el.removeEventListener(eventType, fns[c], false);
+                } else if (el.detachEvent) {
+                    el.detachEvent("on" + eventType, fns[c]);
+                }
+
+                fns[c] = null;
+            }
+            el[eventType] = null;
+        } else {
+            if (el.removeEventListener) {
+                el.removeEventListener(eventType, fn, false);
+            } else if (el.detachEvent) {
+                el.detachEvent("on" + eventType, fn);
+            }
+        }
+        return el;
+    },
+    fireEvent: function (el, type,attrs) {
+        var event;
+        if (el.dispatchEvent) {
+            event = document.createEvent("Events");
+            for(var i in attrs){
+                event[i] = attrs[i];
+            }
+            event.initEvent(type,true,true);
+//            var event = document.createEvent("MouseEvents");
+//            event.initMouseEvent("click",true,true,document.defaultView,0,0,0,0,0,false,false,false,false,0,null);
+            return el.dispatchEvent(event);
+        }else if (el.fireEvent) {
+            //IE8,IE8-
+
+            event = document.createEventObject();
+            for(var i in attrs){
+                event[i] = attrs[i];
+            }
+            return el.fireEvent("on" + type, event);
+        }
+    },
+
+    fixEventType: function (type) {
+        var retType;
+        if (UI.B.firefox) {
+            var map = {
+                'mousewheel': 'DOMMouseScroll'
+            }
+            retType = map[type];
+        }
+        if (retType) return retType;
+        return type;
+    },
+    E: function (oevent) {
+        // dom0 级事件，event在window.event 上
+        oevent = oevent || window.event;
+
+        // event.eventPhase 事件处于事件流哪个阶段， 1：捕获， 2：目标， 3：冒泡
+        var doc = document.documentElement, body = document.body;
+
+        var o = {
+            originEvent: oevent,
+            stop: function () {
+                if (oevent && oevent.stopPropagation) {
+                    oevent.stopPropagation();
+                } else {
+                    oevent.cancelBubble = true; //IE
+                }
+            },
+            prevent: function () {
+                //只有oevent.canelable ==true 才可以取消默认行为
+                if (oevent && oevent.preventDefault) {
+                    oevent.preventDefault();
+                } else {
+                    oevent.returnValue = false; //IE
+                }
+            },
+
+            //IE:srcElement
+            target: oevent.target || oevent.srcElement,
+            relatedTarget: oevent.relatedTarget || oevent.toElement || oevent.fromElement,
+
+            /** 处理mouseenter,mouseleave
+             *  $(e.relatedTarget).closest(this)[0] == null
+             *  if(e.target === this && e.relatedTarget.parentNode !== this) {
+		     *       console.log('mouseover');
+	         *  }else {
+		     *       return false;
+	         *  }
+             */
+
+
+            //IE没有pageX,pageY, 在标准模式下工作
+            pageX: oevent.pageX || oevent.clientX + (doc && doc.scrollLeft || body && body.scrollLeft || 0) - (doc && doc.clientLeft || body && body.clientLeft || 0),
+            pageY: oevent.pageY || oevent.clientY + (doc && doc.scrollTop || body && body.scrollTop || 0) - (doc && doc.clientTop || body && body.clientTop || 0),
+            clientX: oevent.clientX,
+            clientY: oevent.clientY,
+
+            //IE,chrome:keyCode, FF:which
+            //回车：13， 退格：8，退出：27
+            keyCode: oevent.keyCode || oevent.which,
+            /** 键盘触发顺序： keydown,keypress,keyup
+             *  如果一直按一个ASC键，会一直触发keydown和keypress， 松开触发keyup
+             *  如果一直按一个非字符键，会一直触发keydown 直到松开触发keyup
+             */
+
+
+            //======================鼠标滚轮事件========================
+            //browser      | 事件名称        | 属性值       | down | up 向前
+            //chrome/IE    | mousewheel     | wheelDelta  | -120 | 120
+            //FF           | DOMMouseScroll | detail      | 10   | -10
+            //=========================================================
+
+            //滚轮属性,向下:-1, 向上:+1
+            wheel: (oevent.wheelDelta && (oevent.wheelDelta < 0 ? -1 : 1)) || ( oevent.detail > 0 ? -1 : 1),
+
+            shiftKey: oevent.shiftKey,
+            altKey: oevent.altKey,
+            ctrlKey: oevent.ctrlKey,
+            //metaKey 在win中是window键，在mac中是command键，IE8及IE8- 不支持metaKey
+            //事件类型
+            type: oevent.type
+
+        };
+
+        //================鼠标按键===============
+        // 这里测试的是 button的情况
+        //================chrome================
+        //| event     | left  | middle | right |
+        //| mousedown | 0     |   1    |  2    |
+        //| mouseup   | 0     |   1    |  2    |
+        //| click     | 0     |   x    |  x    |
+        //======================================
+
+        //================FF,IE9==================
+        //| event     | left  | middle | right   |
+        //| mousedown | 0     |   1    |  2      |
+        //| mouseup   | 0     |   x    |  2      |
+        //| click     | 0     |   x    |  x      |
+        //========================================
+
+        //===============IE7,8==================
+        //| event     | left  | middle | right |
+        //| mousedown | 1     |   4    |  2    |
+        //| mouseup   | 1     |   x    |  2    |
+        //| click     | 0     |   x    |  x    |
+        //======================================
+
+        // Add which for click: 1 === left; 2 === middle; 3 === right
+        var button = oevent.button;
+
+        //支持button：IE,chrome,FF
+        //支持which：chrome,FF
+
+        if (!oevent.which && button !== undefined) {
+            //这里处理的是IE7,8的情况
+            o.which = ( button & 1 ? 1 : ( button & 2 ? 3 : ( button & 4 ? 2 : 0 ) ) );
+        } else {
+            //event.which 正常， 1,2,3;
+            o.which = oevent.which;
+        }
+
+
+        //事件的补充说明
+        /**
+         * focus,blur 不冒泡； focusin，focusout 会冒泡
+         * 执行顺序为：focusout,focusin,blur,focus
+         * 执行顺序：mousedown,mouseup,click,mousedown,mouseup,click,dbclick
+         * IE8 bug：mousedown,mouseup,click,mouseup,dbclick
+         * mouseover,mouseout 所有鼠标事件都会冒泡
+         *
+         *
+         */
+        return o;
+    },
+//==========================================
+
+
+//===================position===============
+    windowHeight: function () {
+        var b = document.documentElement;
+        return self.innerHeight || b && b.clientHeight || document.body.clientHeight;
+    },
+    windowWidth: function () {
+        var b = document.documentElement;
+        return self.innerWidth || b && b.clientWidth || document.body.clientWidth;
+    },
+    pageWidth: function () {
+        return document.documentElement.scrollWidth || document.body.scrollWidth;
+    },
+    pageHeight: function () {
+        return document.documentElement.scrollHeight || document.body.scrollHeight;
+    },
+    /**
+     * 获得元素相对文档的位置
+     */
+    getPosDoc: function (el) {
+        var x = 0, y = 0;
+        while (el) {
+            x += el.offsetLeft;
+            y += el.offsetTop;
+            el = el.offsetParent;
+        }
+        return {x: x, y: y};
+    },
+    /**
+     * 获得元素相对屏幕的位置
+     */
+    getPosWin: function (el) {
+        if (el.getBoundingClientRect) {
+            var b = el.getBoundingClientRect();
+            return {x: b.left, y: b.top};
+        }
+
+        var xy = UI.getPosDoc(el),
+            x = xy.x,
+            y = xy.y;
+
+        //这样做比较精确
+        for (var ep = el.parentNode; ep && ep.nodeType == 1; ep = ep.parentNode) {
+            x -= ep.scrollLeft;
+            y -= ep.scrollTop;
+        }
+        return {x: x, y: y};
+        // el.clientTop 边框的宽度
+        // el.offsetWith 元素边框width + 内边距（padding）
+        // el.clientWidth 元素内边距(paddnig)
+        // el.offsetLeft 元素的外边框开始 到 父元素的内边框 并且元素的祖先节点必须要是定位过.
+    },
+//==========================================
+
+
+//===================load===================
+    loadJs: function (file, callback, charset) {
+        var js = document.createElement('script');
+        js.type = 'text/javascript';
+        js.onload = js.onreadystatechange = function () {
+            if ((!js.readyState || js.readyState == "loaded" || js.readyState == "complete")) {
+                js.onload = js.onerror = js.onreadystatechange = null;
+                callback && callback();
+            }
+        };
+        js.src = file;
+        js.charset = charset || 'utf-8';
+        document.getElementsByTagName("head")[0].appendChild(js);
+    },
+    asynJSON: function (file, methodName, callback, charset) {
+        var js = document.createElement("script"),
+            head = document.getElementsByTagName("head")[0];
+
+        window[methodName] = function (data) {
+            window[methodName] = undefined;
+            try {
+                delete window[methodName]
+            } catch (h) {
+            }
+            callback(data);
+            head && setTimeout(function () {
+                    head.removeChild(js)
+                },
+                5)
+        };
+        js.charset = charset || 'utf-8';
+        js.src = file;
+        head.appendChild(js)
+    }
+//===========================================
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
